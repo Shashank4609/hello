@@ -36,7 +36,7 @@ public class DataServer {
 
     }
 
-    // Class to handle client connections
+    // Class to handle clnt connections
     static class ClientHandler implements Runnable {
         private Socket clientSocket;
 
@@ -90,3 +90,4 @@ public class DataServer {
         }
     }
 }
+      
