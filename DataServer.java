@@ -10,33 +10,16 @@ public class DataServer {
         int port = 8080; // Port to listen on
         ServerSocket serverSocket = new ServerSocket(port);
         System.out.println("Server is running on port " + port);
-
+    
+        // Keep accepting client connections in a loop
         while (true) {
-    try {
-        Socket clientSocket = serverSocket.accept();
-        BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-
-        String input;
-        while ((input = in.readLine()) != null) {
-            System.out.println("Received from client: " + input);
-            out.println("Acknowledged: " + input); // Respond to the client
+            Socket clientSocket = serverSocket.accept();
+            // For each client connection, start a new thread with ClientHandler
+            new Thread(new ClientHandler(clientSocket)).start();
         }
-
-        // Closing the streams and socket after finishing all client communication
-        in.close();
-        out.close();
-        clientSocket.close();
-
-    } catch (IOException e) {
-        e.printStackTrace();
-    }
-}
-
-
     }
 
-    // Class to handle clnt connections
+    // The ClientHandler class to handle each client connection
     static class ClientHandler implements Runnable {
         private Socket clientSocket;
 
@@ -50,18 +33,19 @@ public class DataServer {
                 BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
 
-                String requestLine = in.readLine(); // Read the client request
-                if (requestLine != null) {
-                    System.out.println("Request: " + requestLine);
+                String requestLine;
+                // Keep reading requests from the client
+                while ((requestLine = in.readLine()) != null) {
+                    System.out.println("Received from client: " + requestLine);
 
+                    // Split the command into parts
                     String[] requestParts = requestLine.split(" ");
                     String command = requestParts[0];
                     String key = requestParts.length > 1 ? requestParts[1] : null;
                     String value = requestParts.length > 2 ? requestParts[2] : null;
 
-                    // Handle different types of requests
+                    // Check if the command is valid (either "PUT" or "GET")
                     if (command.equalsIgnoreCase("PUT")) {
-                        // Store data on the server
                         if (key != null && value != null) {
                             dataStore.put(key, value);
                             out.println("Data stored: " + key + " = " + value);
@@ -69,18 +53,18 @@ public class DataServer {
                             out.println("Invalid PUT request. Provide both key and value.");
                         }
                     } else if (command.equalsIgnoreCase("GET")) {
-                        // Retrieve data from the server
                         if (key != null && dataStore.containsKey(key)) {
                             out.println("Data for " + key + ": " + dataStore.get(key));
                         } else {
                             out.println("No data found for key: " + key);
                         }
                     } else {
+                        // If the command is neither PUT nor GET, return "Unknown command"
                         out.println("Unknown command.");
                     }
                 }
 
-                // Close the connection
+                // Close the connection after the client finishes
                 in.close();
                 out.close();
                 clientSocket.close();
@@ -90,4 +74,3 @@ public class DataServer {
         }
     }
 }
-      
